@@ -29,6 +29,10 @@ If you only need the Python script, you can download it directly from the reposi
 
 3. Right-click and choose **Save As** to save the file locally.
 
+4. Open your terminal and go to the Runelite root directory
+
+5. Run this in your terminal: python add_skeleton_plugin.py
+
 ---
 
 ### What the Script Does
