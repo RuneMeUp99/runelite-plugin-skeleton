@@ -26,7 +26,7 @@ public class SkeletonOverlay extends Overlay
     @Override
     public Dimension render(Graphics2D graphics)
     {
-        // Draw a simple rectangle on the screen
+        // Draw simple text on the screen
         graphics.setColor(Color.CYAN);
         graphics.drawString("Skeleton Overlay Active", 50, 50);
         return null;
