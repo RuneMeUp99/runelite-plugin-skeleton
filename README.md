@@ -42,7 +42,7 @@ python add_skeleton_plugin.py
 1. Checks if the RuneLite plugins directory (`runelite-client/src/main/java/net/runelite/client/plugins`) exists.
 2. Clones or updates the skeleton plugin from this repository.
 3. Prompts you if the skeleton plugin already exists in the RuneLite project and asks for confirmation to overwrite it.
-4. Copies the skeleton plugin into the correct location without including unnecessary files like `.git`, `.gitignore`, or `README.md`.
+4. Allows you to create new plugins using the plugin skeleton.
 
 ---
 
