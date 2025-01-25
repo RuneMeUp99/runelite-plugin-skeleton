@@ -4,7 +4,7 @@ import shutil
 import subprocess
 
 # Configuration
-PLUGIN_REPO = "https://github.com/YOUR_USERNAME/runelite-plugin-skeleton.git"
+PLUGIN_REPO = "https://github.com/SyntaxSkater/runelite-plugin-skeleton.git"
 RUNE_DIR = os.path.join("runelite-client", "src", "main", "java", "net", "runelite", "client", "plugins")
 PLUGIN_NAME = "skeletonplugin"
 TEMP_DIR = ".skeletonplugin_temp"
