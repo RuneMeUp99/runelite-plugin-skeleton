@@ -1,4 +1,3 @@
-
 # RuneLite Plugin Skeleton
 
 A starting template for creating RuneLite plugins. This skeleton includes:
@@ -48,3 +47,32 @@ python add_skeleton_plugin.py
 
 ## Contributing
 Contributions to improve the skeleton plugin are welcome! Feel free to submit a pull request or open an issue.
+
+---
+
+## Submitting Plugins to the Plugin Hub
+Submitting your plugin to the RuneLite Plugin Hub allows other users to download and use it.
+
+#### Fork the RuneLite Plugin Hub Repository:
+1. Go to the [RuneLite Plugin Hub GitHub Repo](https://github.com/runelite/plugin-hub).
+2. Fork the repository to your GitHub account.
+
+#### Add Your Plugin to the Plugin Hub:
+1. Clone your fork of the plugin hub:
+   ```bash
+   git clone https://github.com/<YourUsername>/plugin-hub.git
+   ```
+2. Create a folder for your plugin in the `plugin-hub/plugins/` directory.
+3. Add your plugin source code and metadata (e.g., `plugin.json`) to the folder.
+
+#### Submit a Pull Request:
+1. Commit and push your changes to your fork:
+   ```bash
+   git add .
+   git commit -m "Add my custom plugin"
+   git push origin main
+   ```
+2. Go to the original plugin hub repository and submit a pull request from your fork.
+
+#### Wait for Approval:
+- The RuneLite team will review your plugin. Once approved, it will appear in the Plugin Hub for all users to download.
