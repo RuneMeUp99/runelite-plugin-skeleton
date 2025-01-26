@@ -52,3 +52,7 @@ Contributions to improve the skeleton plugin are welcome! Feel free to submit a 
 
 ## Submitting Plugins to the Plugin Hub
 Instructions for submitting your plugin can be found here: [Plugin Hub](https://github.com/runelite/plugin-hub)
+
+---
+## Donations
+Any tips for creating this repo are appreciated. You can send them to "Rune Me Up99" on OSRS :) If I'm not appearing online, please add runemeup99 on [Discord](https://discord.com/download).
