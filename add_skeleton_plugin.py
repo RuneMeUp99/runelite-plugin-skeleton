@@ -1,32 +1,16 @@
 
 import os
 import shutil
-import subprocess
 import re
 
 # Configuration
-PLUGIN_REPO = "https://github.com/SyntaxSkater/runelite-plugin-skeleton.git"
 RUNE_DIR = os.path.join("runelite-client", "src", "main", "java", "net", "runelite", "client", "plugins")
 RESOURCE_DIR_TEMPLATE = os.path.join("runelite-client", "src", "main", "resources", "net", "runelite", "client", "plugins")
-TEMP_DIR = ".skeletonplugin_temp"
-PLUGIN_NAME = "skeletonplugin"
-
 VALID_PLUGIN_NAME_REGEX = r"^[a-zA-Z][a-zA-Z0-9_]*$"
-
-def clone_or_update_repo():
-    if os.path.exists(TEMP_DIR):
-        print("Updating local skeleton plugin repository...")
-        subprocess.run(["git", "-C", TEMP_DIR, "pull"], check=True)
-    else:
-        print("Cloning skeleton plugin from GitHub...")
-        subprocess.run(["git", "clone", PLUGIN_REPO, TEMP_DIR], check=True)
 
 def validate_plugin_name(plugin_name):
     if not re.match(VALID_PLUGIN_NAME_REGEX, plugin_name):
         print("Error: Plugin name must start with a letter and contain only letters, numbers, and underscores.")
-        return False
-    if plugin_name.lower() == PLUGIN_NAME.lower():
-        print(f"Error: '{PLUGIN_NAME}' is a reserved name and cannot be used.")
         return False
     return True
 
@@ -49,100 +33,127 @@ def create_new_plugin():
         print(f"Overwriting existing plugin '{new_plugin_name}'...")
         shutil.rmtree(target_dir)
 
-    # Copy skeleton plugin files while ignoring unnecessary files
-    shutil.copytree(
-        os.path.join(RUNE_DIR, PLUGIN_NAME), target_dir,
-        ignore=shutil.ignore_patterns(
-            ".git", ".gitignore", ".gitattributes", "add_example_plugin.py", "add_skeleton_plugin.py", "README.md", "LICENSE", "*.png"
-        )
-    )
+    # Create the plugin directory and boilerplate files
+    os.makedirs(target_dir)
+    os.makedirs(resource_dir)
 
-    if not os.path.exists(resource_dir):
-        os.makedirs(resource_dir)
+    # Create the Java files with updated author and donation information
+    java_files = {
+        f"{new_plugin_class_name}Plugin.java": f"""package net.runelite.client.plugins.{new_plugin_package};
 
-    # Copy and rename resources
-    skeleton_icon_src = os.path.join(RESOURCE_DIR_TEMPLATE, PLUGIN_NAME, "skeleton_icon.png")
-    if os.path.exists(skeleton_icon_src):
-        shutil.copy(skeleton_icon_src, os.path.join(resource_dir, f"{new_plugin_package}_icon.png"))
-        print(f"Icon copied to {resource_dir}/{new_plugin_package}_icon.png")
-    else:
-        print("Warning: skeleton_icon.png not found in the skeleton plugin resources!")
+import com.google.inject.Provides;
+import javax.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDescriptor;
 
-    # Refactor plugin names in Java files and rename files
-    for root, _, files in os.walk(target_dir):
-        for file in files:
-            file_path = os.path.join(root, file)
-            if file.endswith(".java"):
-                with open(file_path, "r") as f:
-                    content = f.read()
+@Slf4j
+@PluginDescriptor(
+        name = "{new_plugin_class_name} Plugin",
+        description = "A custom plugin created using the boilerplate script by SyntaxSkater",
+        tags = {{"example", "template", "plugin"}}
+)
+public class {new_plugin_class_name}Plugin extends Plugin
+{{
+    @Inject
+    private Client client;
 
-                # Replace references to SkeletonPlugin, SkeletonOverlay, etc.
-                updated_content = content.replace("SkeletonPlugin", new_plugin_class_name)
-                updated_content = updated_content.replace("SkeletonOverlay", f"{new_plugin_class_name}Overlay")
-                updated_content = updated_content.replace("skeletonplugin", new_plugin_package)
+    @Provides
+    {new_plugin_class_name}Config provideConfig(ConfigManager configManager)
+    {{
+        return configManager.getConfig({new_plugin_class_name}Config.class);
+    }}
 
-                with open(file_path, "w") as f:
-                    f.write(updated_content)
+    @Override
+    protected void startUp() throws Exception
+    {{
+        log.info("{new_plugin_class_name} Plugin started! Created by SyntaxSkater (GitHub: https://github.com/SyntaxSkater, OSRS: Rune Me Up99)");
+    }}
 
-                # Rename files to match the new plugin name
-                if "SkeletonPlugin" in file:
-                    new_file_name = file.replace("SkeletonPlugin", new_plugin_class_name)
-                    os.rename(file_path, os.path.join(root, new_file_name))
-                elif "SkeletonOverlay" in file:
-                    new_file_name = file.replace("SkeletonOverlay", f"{new_plugin_class_name}Overlay")
-                    os.rename(file_path, os.path.join(root, new_file_name))
+    @Override
+    protected void shutDown() throws Exception
+    {{
+        log.info("{new_plugin_class_name} Plugin stopped!");
+    }}
+}}
+""",
+        f"{new_plugin_class_name}Config.java": f"""package net.runelite.client.plugins.{new_plugin_package};
+
+import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigGroup;
+
+@ConfigGroup("{new_plugin_package}")
+public interface {new_plugin_class_name}Config extends Config
+{{
+    // Configuration options go here
+}}
+""",
+        f"{new_plugin_class_name}Overlay.java": f"""package net.runelite.client.plugins.{new_plugin_package};
+
+import javax.inject.Inject;
+import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.OverlayPosition;
+
+public class {new_plugin_class_name}Overlay extends Overlay
+{{
+    @Inject
+    private {new_plugin_class_name}Plugin plugin;
+
+    @Override
+    public OverlayPosition getPosition()
+    {{
+        return OverlayPosition.DYNAMIC;
+    }}
+
+    @Override
+    public Dimension render(Graphics2D graphics)
+    {{
+        // Rendering logic here
+        return null;
+    }}
+}}
+""",
+        f"{new_plugin_class_name}Panel.java": f"""package net.runelite.client.plugins.{new_plugin_package};
+
+import javax.swing.*;
+import net.runelite.client.ui.PluginPanel;
+
+public class {new_plugin_class_name}Panel extends PluginPanel
+{{
+    public {new_plugin_class_name}Panel()
+    {{
+        JLabel label = new JLabel("Plugin created by SyntaxSkater (GitHub: https://github.com/SyntaxSkater, OSRS: Rune Me Up99)");
+        add(label);
+
+        JLabel donationLabel = new JLabel("Donations appreciated in the form of OSRS GP to Rune Me Up99");
+        add(donationLabel);
+    }}
+}}
+"""
+    }
+
+    # Write the Java files to the target directory
+    for file_name, content in java_files.items():
+        with open(os.path.join(target_dir, file_name), "w") as f:
+            f.write(content)
+
+    # Add the resource file (icon)
+    icon_path = os.path.join(resource_dir, f"{new_plugin_package}_icon.png")
+    with open(icon_path, "wb") as f:
+        f.write(b"")  # Placeholder for the actual PNG content
 
     print(f"New plugin '{new_plugin_name}' created successfully in '{target_dir}'.")
 
-def ensure_skeleton_is_updated():
-    skeleton_dir = os.path.join(RUNE_DIR, PLUGIN_NAME)
-    resource_dir = os.path.join(RESOURCE_DIR_TEMPLATE, PLUGIN_NAME)
-
-    # Ensure RuneLite plugins directory exists
-    if not os.path.exists(RUNE_DIR):
-        os.makedirs(RUNE_DIR, exist_ok=True)
-
-    if not os.path.exists(resource_dir):
-        os.makedirs(resource_dir, exist_ok=True)
-
-    # Overwrite or create the skeleton package
-    if os.path.exists(skeleton_dir):
-        print(f"Overwriting skeleton plugin at {skeleton_dir}...")
-        shutil.rmtree(skeleton_dir)
-
-    shutil.copytree(
-        TEMP_DIR, skeleton_dir,
-        ignore=shutil.ignore_patterns(
-            ".git", ".gitignore", ".gitattributes", "add_example_plugin.py", "add_skeleton_plugin.py", "README.md", "LICENSE"
-        )
-    )
-
-    # Copy icon to skeleton resources
-    temp_icon_path = os.path.join(TEMP_DIR, "skeleton_icon.png")
-    skeleton_icon_dest = os.path.join(resource_dir, "skeleton_icon.png")
-    if os.path.exists(temp_icon_path):
-        shutil.copy(temp_icon_path, skeleton_icon_dest)
-        print(f"Skeleton icon copied to {skeleton_icon_dest}")
-    else:
-        print("Warning: skeleton_icon.png not found in the repository!")
-
-    print("Skeleton plugin updated successfully!")
-
 def main():
-    # Ensure we're in the RuneLite project directory
+    # Ensure the RuneLite directory exists
     if not os.path.exists(RUNE_DIR):
         print("Error: This script must be run from the RuneLite project root directory.")
         return
 
     try:
-        clone_or_update_repo()
-        ensure_skeleton_is_updated()
-
-        response = input("Would you like to create a new plugin? (y/n): ").lower()
-        if response == "y":
-            create_new_plugin()
-    except subprocess.CalledProcessError as e:
-        print(f"Error running a git command: {e}")
+        create_new_plugin()
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
 
