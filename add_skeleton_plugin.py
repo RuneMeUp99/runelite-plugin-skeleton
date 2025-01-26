@@ -37,6 +37,7 @@ def create_new_plugin():
             break
 
     new_plugin_package = new_plugin_name.lower()
+    new_plugin_class_name = new_plugin_name.capitalize()
     target_dir = os.path.join(RUNE_DIR, new_plugin_package)
     resource_dir = os.path.join(RESOURCE_DIR_TEMPLATE, new_plugin_package)
 
@@ -48,10 +49,12 @@ def create_new_plugin():
         print(f"Overwriting existing plugin '{new_plugin_name}'...")
         shutil.rmtree(target_dir)
 
-    # Copy skeleton plugin and refactor names
+    # Copy skeleton plugin files while ignoring unnecessary files
     shutil.copytree(
         os.path.join(RUNE_DIR, PLUGIN_NAME), target_dir,
-        ignore=shutil.ignore_patterns(".git", ".gitignore", "README.md", "LICENSE")
+        ignore=shutil.ignore_patterns(
+            ".git", ".gitignore", ".gitattributes", "add_example_plugin.py", "add_skeleton_plugin.py", "README.md", "LICENSE", "*.png"
+        )
     )
 
     if not os.path.exists(resource_dir):
@@ -65,24 +68,28 @@ def create_new_plugin():
     else:
         print("Warning: skeleton_icon.png not found in the skeleton plugin resources!")
 
-    # Refactor plugin names in Java files
+    # Refactor plugin names in Java files and rename files
     for root, _, files in os.walk(target_dir):
         for file in files:
+            file_path = os.path.join(root, file)
             if file.endswith(".java"):
-                file_path = os.path.join(root, file)
                 with open(file_path, "r") as f:
                     content = f.read()
 
-                # Replace references to SkeletonPlugin with the new plugin name
-                updated_content = content.replace("SkeletonPlugin", new_plugin_name.capitalize())
+                # Replace references to SkeletonPlugin, SkeletonOverlay, etc.
+                updated_content = content.replace("SkeletonPlugin", new_plugin_class_name)
+                updated_content = updated_content.replace("SkeletonOverlay", f"{new_plugin_class_name}Overlay")
                 updated_content = updated_content.replace("skeletonplugin", new_plugin_package)
 
                 with open(file_path, "w") as f:
                     f.write(updated_content)
 
-                # Rename files if necessary
+                # Rename files to match the new plugin name
                 if "SkeletonPlugin" in file:
-                    new_file_name = file.replace("SkeletonPlugin", new_plugin_name.capitalize())
+                    new_file_name = file.replace("SkeletonPlugin", new_plugin_class_name)
+                    os.rename(file_path, os.path.join(root, new_file_name))
+                elif "SkeletonOverlay" in file:
+                    new_file_name = file.replace("SkeletonOverlay", f"{new_plugin_class_name}Overlay")
                     os.rename(file_path, os.path.join(root, new_file_name))
 
     print(f"New plugin '{new_plugin_name}' created successfully in '{target_dir}'.")
@@ -105,7 +112,9 @@ def ensure_skeleton_is_updated():
 
     shutil.copytree(
         TEMP_DIR, skeleton_dir,
-        ignore=shutil.ignore_patterns(".git", ".gitignore", "README.md", "LICENSE")
+        ignore=shutil.ignore_patterns(
+            ".git", ".gitignore", ".gitattributes", "add_example_plugin.py", "add_skeleton_plugin.py", "README.md", "LICENSE"
+        )
     )
 
     # Copy icon to skeleton resources
