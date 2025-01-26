@@ -2,13 +2,16 @@
 import os
 import shutil
 import subprocess
+import re
 
 # Configuration
-PLUGIN_REPO = "https://github.com/YOUR_USERNAME/runelite-plugin-skeleton.git"
+PLUGIN_REPO = "https://github.com/SyntaxSkater/runelite-plugin-skeleton.git"
 RUNE_DIR = os.path.join("runelite-client", "src", "main", "java", "net", "runelite", "client", "plugins")
-RESOURCE_DIR = os.path.join("runelite-client", "src", "main", "resources", "net", "runelite", "client", "plugins", "skeletonplugin")
-PLUGIN_NAME = "skeletonplugin"
+RESOURCE_DIR_TEMPLATE = os.path.join("runelite-client", "src", "main", "resources", "net", "runelite", "client", "plugins")
 TEMP_DIR = ".skeletonplugin_temp"
+PLUGIN_NAME = "skeletonplugin"
+
+VALID_PLUGIN_NAME_REGEX = r"^[a-zA-Z][a-zA-Z0-9_]*$"
 
 def clone_or_update_repo():
     if os.path.exists(TEMP_DIR):
@@ -18,43 +21,24 @@ def clone_or_update_repo():
         print("Cloning skeleton plugin from GitHub...")
         subprocess.run(["git", "clone", PLUGIN_REPO, TEMP_DIR], check=True)
 
-def ensure_skeleton_is_updated():
-    target_dir = os.path.join(RUNE_DIR, PLUGIN_NAME)
-    resource_icon = os.path.join(RESOURCE_DIR, "skeleton_icon.png")
-
-    # Ensure the RuneLite plugins directory exists
-    if not os.path.exists(RUNE_DIR):
-        os.makedirs(RUNE_DIR, exist_ok=True)
-
-    # Ensure the resources directory exists
-    if not os.path.exists(RESOURCE_DIR):
-        os.makedirs(RESOURCE_DIR, exist_ok=True)
-
-    # Overwrite or create the plugin package
-    if os.path.exists(target_dir):
-        print(f"Overwriting existing package at {target_dir}...")
-        shutil.rmtree(target_dir)
-    else:
-        print(f"Creating new package at {target_dir}...")
-    
-    shutil.copytree(
-        TEMP_DIR, target_dir, 
-        ignore=shutil.ignore_patterns(".git", ".gitignore", "README.md", "LICENSE")
-    )
-
-    # Copy the icon to the resources directory
-    temp_icon_path = os.path.join(TEMP_DIR, "skeleton_icon.png")
-    if os.path.exists(temp_icon_path):
-        shutil.copy(temp_icon_path, resource_icon)
-        print(f"Icon copied to {resource_icon}")
-    else:
-        print("Warning: skeleton_icon.png not found in the repository!")
-
-    print("Skeleton plugin added successfully!")
+def validate_plugin_name(plugin_name):
+    if not re.match(VALID_PLUGIN_NAME_REGEX, plugin_name):
+        print("Error: Plugin name must start with a letter and contain only letters, numbers, and underscores.")
+        return False
+    if plugin_name.lower() == PLUGIN_NAME.lower():
+        print(f"Error: '{PLUGIN_NAME}' is a reserved name and cannot be used.")
+        return False
+    return True
 
 def create_new_plugin():
-    new_plugin_name = input("Enter the name for your new plugin: ").strip()
-    target_dir = os.path.join(RUNE_DIR, new_plugin_name)
+    while True:
+        new_plugin_name = input("Enter the name for your new plugin (e.g., MyNewPlugin): ").strip()
+        if validate_plugin_name(new_plugin_name):
+            break
+
+    new_plugin_package = new_plugin_name.lower()
+    target_dir = os.path.join(RUNE_DIR, new_plugin_package)
+    resource_dir = os.path.join(RESOURCE_DIR_TEMPLATE, new_plugin_package)
 
     if os.path.exists(target_dir):
         response = input(f"A plugin named '{new_plugin_name}' already exists. Overwrite it? (y/n): ").lower()
@@ -64,11 +48,76 @@ def create_new_plugin():
         print(f"Overwriting existing plugin '{new_plugin_name}'...")
         shutil.rmtree(target_dir)
 
+    # Copy skeleton plugin and refactor names
     shutil.copytree(
         os.path.join(RUNE_DIR, PLUGIN_NAME), target_dir,
         ignore=shutil.ignore_patterns(".git", ".gitignore", "README.md", "LICENSE")
     )
-    print(f"New plugin '{new_plugin_name}' created successfully!")
+
+    if not os.path.exists(resource_dir):
+        os.makedirs(resource_dir)
+
+    # Copy and rename resources
+    skeleton_icon_src = os.path.join(RESOURCE_DIR_TEMPLATE, PLUGIN_NAME, "skeleton_icon.png")
+    if os.path.exists(skeleton_icon_src):
+        shutil.copy(skeleton_icon_src, os.path.join(resource_dir, f"{new_plugin_package}_icon.png"))
+        print(f"Icon copied to {resource_dir}/{new_plugin_package}_icon.png")
+    else:
+        print("Warning: skeleton_icon.png not found in the skeleton plugin resources!")
+
+    # Refactor plugin names in Java files
+    for root, _, files in os.walk(target_dir):
+        for file in files:
+            if file.endswith(".java"):
+                file_path = os.path.join(root, file)
+                with open(file_path, "r") as f:
+                    content = f.read()
+
+                # Replace references to SkeletonPlugin with the new plugin name
+                updated_content = content.replace("SkeletonPlugin", new_plugin_name.capitalize())
+                updated_content = updated_content.replace("skeletonplugin", new_plugin_package)
+
+                with open(file_path, "w") as f:
+                    f.write(updated_content)
+
+                # Rename files if necessary
+                if "SkeletonPlugin" in file:
+                    new_file_name = file.replace("SkeletonPlugin", new_plugin_name.capitalize())
+                    os.rename(file_path, os.path.join(root, new_file_name))
+
+    print(f"New plugin '{new_plugin_name}' created successfully in '{target_dir}'.")
+
+def ensure_skeleton_is_updated():
+    skeleton_dir = os.path.join(RUNE_DIR, PLUGIN_NAME)
+    resource_dir = os.path.join(RESOURCE_DIR_TEMPLATE, PLUGIN_NAME)
+
+    # Ensure RuneLite plugins directory exists
+    if not os.path.exists(RUNE_DIR):
+        os.makedirs(RUNE_DIR, exist_ok=True)
+
+    if not os.path.exists(resource_dir):
+        os.makedirs(resource_dir, exist_ok=True)
+
+    # Overwrite or create the skeleton package
+    if os.path.exists(skeleton_dir):
+        print(f"Overwriting skeleton plugin at {skeleton_dir}...")
+        shutil.rmtree(skeleton_dir)
+
+    shutil.copytree(
+        TEMP_DIR, skeleton_dir,
+        ignore=shutil.ignore_patterns(".git", ".gitignore", "README.md", "LICENSE")
+    )
+
+    # Copy icon to skeleton resources
+    temp_icon_path = os.path.join(TEMP_DIR, "skeleton_icon.png")
+    skeleton_icon_dest = os.path.join(resource_dir, "skeleton_icon.png")
+    if os.path.exists(temp_icon_path):
+        shutil.copy(temp_icon_path, skeleton_icon_dest)
+        print(f"Skeleton icon copied to {skeleton_icon_dest}")
+    else:
+        print("Warning: skeleton_icon.png not found in the repository!")
+
+    print("Skeleton plugin updated successfully!")
 
 def main():
     # Ensure we're in the RuneLite project directory
